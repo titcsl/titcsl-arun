@@ -22,7 +22,7 @@ public class UserServiceImpl implements UserService {
     public User updateManagementRole(String email) {
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UserNotFoundException("User not found with email: " + email));
+                .orElseThrow(() -> new UserNotFoundException("Account with email not found email: " + email));
 
         user.setRole(Role.MANAGEMENT);
 
