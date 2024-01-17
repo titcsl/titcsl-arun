@@ -1,6 +1,7 @@
 package space.titcsl.a.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,12 +9,16 @@ import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 import space.titcsl.a.dto.*;
 import space.titcsl.a.entity.User;
+import space.titcsl.a.exception.InvalidCredentialsException;
 import space.titcsl.a.exception.UserExistsException;
 import space.titcsl.a.exception.UserNotFoundException;
+import space.titcsl.a.repository.UserRepository;
 import space.titcsl.a.service.AuthenticationService;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping(path = "/api/v1/auth")
@@ -21,6 +26,7 @@ import java.util.Map;
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
+    private final UserRepository userRepository;
 
     @PostMapping("/signup")
     public ResponseEntity<?> signup(@RequestBody SignUpRequest signUpRequest) {
@@ -39,13 +45,21 @@ public class AuthenticationController {
     }
 
     @PostMapping("/signin")
-    public ResponseEntity<JwtAuthenticationResponse> signin(@RequestBody SignInRequest signInRequest) {
+    public ResponseEntity<?> signin(@RequestBody SignInRequest signInRequest) {
         try {
             return ResponseEntity.ok(authenticationService.signin(signInRequest));
-        } catch (IllegalArgumentException ex) {
+        } catch (UserExistsException ex) {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body((JwtAuthenticationResponse) response);
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        } catch (UserNotFoundException ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        } catch (InvalidCredentialsException ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
         }
     }
     @PostMapping("/refresh/token")
@@ -80,6 +94,44 @@ public class AuthenticationController {
         }
     }
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> ForgotPasswordRequest(@RequestBody Map<String, String> requestBody){
+        String email = requestBody.get("email");
+        try {
+            authenticationService.forgotPassRequest(email);
+            return ResponseEntity.ok().body("Otp Sent Succesfully");
+        } catch (UserExistsException ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        } catch (UserNotFoundException ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+    }
+
+    @PostMapping("/verify-forgot-password")
+    public ResponseEntity<?> ForgotPasswordValidiate(@RequestBody Map<String, String> requestBody){
+        String email = requestBody.get("email");
+        String otp = requestBody.get("otp");
+        String password = requestBody.get("password");
+
+        try {
+            authenticationService.settingPasswordForgot(email, password, otp);
+            return ResponseEntity.ok().body("Password Setted Succesfully.");
+        } catch (UserExistsException ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        } catch (UserNotFoundException ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+
+    }
 
 
 

@@ -11,6 +11,10 @@ public interface AuthenticationService {
 
     void verifyUser(String email, String otp);
 
+    void forgotPassRequest(String email);
+
+    void settingPasswordForgot(String email, String password, String otp);
+
     User updateUser(UpdateUserDto updateUserRequest, String token);
     JwtAuthenticationResponse refreshToken(RefreshTokenRequest refreshTokenRequest);
 }

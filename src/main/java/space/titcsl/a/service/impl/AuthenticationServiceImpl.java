@@ -4,11 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import space.titcsl.a.dto.*;
 import space.titcsl.a.entity.Role;
 import space.titcsl.a.entity.User;
+import space.titcsl.a.exception.InvalidCredentialsException;
 import space.titcsl.a.exception.UserExistsException;
 import space.titcsl.a.exception.UserNotFoundException;
 import space.titcsl.a.repository.UserRepository;
@@ -65,10 +67,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         return user;
     }
 
-        public void verifyUser(String email, String otp) {
+    public void verifyUser(String email, String otp) {
         Optional<User> optionalUser = userRepository.findByEmail(email);
 
-            if (optionalUser.isPresent()) {
+        if (optionalUser.isPresent()) {
             User user = optionalUser.get();
 
             if (!user.isVerified() && otp.equals(user.getVerificationCode())) {
@@ -81,6 +83,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new UserNotFoundException("User not found");
         }
     }
+
     @Override
     public User updateUser(UpdateUserDto updateUserRequest, String token) {
         // Validate the token
@@ -103,7 +106,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (!authUser.getEmail().equals(updateUserRequest.getEmail())) {
             throw new UserNotFoundException("User not authorized to update this profile");
         }
-
 
 
         // Update the user information based on the provided fields
@@ -143,34 +145,77 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(signInRequest.getEmail(),
                     signInRequest.getPassword()));
 
-            var user = userRepository.findByEmail(signInRequest.getEmail()).orElseThrow(() -> new IllegalArgumentException("Email or Password are Wrong. Try resetting it or check email or password one more time"));
-            var jwt = jwtService.generateToken(user);
-            var refreshToken = jwtService.generateRefreshToken(new HashMap<>(), user);
+            var user = userRepository.findByEmail(signInRequest.getEmail()).orElseThrow(() ->
+                    new UserNotFoundException("Email or Password are Wrong. Try resetting it or check email or password one more time"));
 
-            JwtAuthenticationResponse jwtAuthenticationResponse = new JwtAuthenticationResponse();
-            jwtAuthenticationResponse.setToken(jwt);
-            jwtAuthenticationResponse.setRefreshToken(refreshToken);
-            return jwtAuthenticationResponse;
+            if (user.isVerified()) {
+                var jwt = jwtService.generateToken(user);
+                var refreshToken = jwtService.generateRefreshToken(new HashMap<>(), user);
+                JwtAuthenticationResponse jwtAuthenticationResponse = new JwtAuthenticationResponse();
+                jwtAuthenticationResponse.setToken(jwt);
+                jwtAuthenticationResponse.setRefreshToken(refreshToken);
+                return jwtAuthenticationResponse;
+            } else {
+                throw new UserExistsException("Verify your account if you could not verify it check the email for instruction email could be in spam/junk. But Trust us. We are since 1937 Serving peoples 14 hours a day..");
+            }
+        } catch (AuthenticationException ex) {
+            throw new InvalidCredentialsException("Email or Password are Wrong. Try resetting it or check email or password one more time");
+        }
+    }
 
-        } catch (IllegalArgumentException ex) {
-            throw ex;
+
+
+    public void forgotPassRequest(String email) {
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+        String otp = UUID.randomUUID().toString().substring(0, 6);
+
+
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+
+            if (user.isVerified()) {
+                user.setForgot_pass_otp(otp);
+                userRepository.save(user);
+                emailService.sendVerificationEmail(email, otp);
+            } else {
+                throw new UserNotFoundException("User not found! Try rechecking email or contact support@arunayurved.com");
+            }
+        } else {
+            throw new UserNotFoundException("User not found with email you have just give recheck the email and give it again");
+        }
+
+    }
+
+    public void settingPasswordForgot(String email, String password, String otp){
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+
+            if (otp.equals(user.getForgot_pass_otp())) {
+                user.setPassword(passwordEncoder.encode(password));
+                userRepository.save(user);
+            } else {
+                throw new UserNotFoundException("Invalid Otp try contacting contact support@arunayurved.com");
+            }
+        } else {
+            throw new UserNotFoundException("User not found with email you have just give recheck the email and give it again or contact support@arunayurved.com");
         }
 
     }
 
 
-
-
     public JwtAuthenticationResponse refreshToken(RefreshTokenRequest refreshTokenRequest){
         String userEmail =  jwtService.extractUsername(refreshTokenRequest.getToken());
         User user = userRepository.findByEmail(userEmail).orElseThrow();
-        if(jwtService.isTokenValid(refreshTokenRequest.getToken(), user)){
-            var jwt = jwtService.generateToken(user);
-            JwtAuthenticationResponse jwtAuthenticationResponse = new JwtAuthenticationResponse();
-            jwtAuthenticationResponse.setToken(jwt);
-            jwtAuthenticationResponse.setRefreshToken(refreshTokenRequest.getToken());
-            return jwtAuthenticationResponse;
-        }
+
+            if (jwtService.isTokenValid(refreshTokenRequest.getToken(), user)) {
+                var jwt = jwtService.generateToken(user);
+                JwtAuthenticationResponse jwtAuthenticationResponse = new JwtAuthenticationResponse();
+                jwtAuthenticationResponse.setToken(jwt);
+                jwtAuthenticationResponse.setRefreshToken(refreshTokenRequest.getToken());
+                return jwtAuthenticationResponse;
+            }
         return null;
     }
 

@@ -9,6 +9,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,6 +17,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "_xuser")
 public class User implements UserDetails {
+
+
 
     @Id
     @GeneratedValue(generator = "uuid2")
@@ -31,6 +34,8 @@ public class User implements UserDetails {
     private String password;
 
     private String phone;
+
+    private String forgot_pass_otp;
 
     private String displayName;
 
