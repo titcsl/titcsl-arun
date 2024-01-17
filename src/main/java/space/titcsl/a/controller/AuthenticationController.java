@@ -67,6 +67,34 @@ public class AuthenticationController {
         return ResponseEntity.ok(authenticationService.refreshToken(refreshTokenRequest));
     }
 
+    @PostMapping("/verificationLaterGen")
+    public ResponseEntity<String> verifyLaterEmail(@RequestBody Map<String, String> requestBody) {
+        try {
+            String email = requestBody.get("email");
+            authenticationService.sendVerificationLater(email);
+
+
+
+            return ResponseEntity.ok("Otp Sent successful");
+        } catch (UserNotFoundException ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", ex.getMessage());
+
+            // Convert Map to JSON string using Jackson
+            ObjectMapper objectMapper = new ObjectMapper();
+            String jsonResponse;
+            try {
+                jsonResponse = objectMapper.writeValueAsString(response);
+            } catch (Exception e) {
+                // Handle serialization exception
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error converting to JSON");
+            }
+
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);
+        }
+    }
+
+
     @PostMapping("/verify")
     public ResponseEntity<String> verify(@RequestBody VerificationRequest verificationRequest) {
         try {

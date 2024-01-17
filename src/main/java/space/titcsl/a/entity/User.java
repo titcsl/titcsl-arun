@@ -35,13 +35,13 @@ public class User implements UserDetails {
 
     private String phone;
 
-    private String forgot_pass_otp;
+    private String handlecode2;
 
     private String displayName;
 
     private boolean verified;
 
-    private String verificationCode;
+    private String handlecode1;
 
 
     private Role role;

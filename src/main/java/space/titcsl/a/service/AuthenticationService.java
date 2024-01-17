@@ -9,6 +9,8 @@ public interface AuthenticationService {
 
     JwtAuthenticationResponse signin(SignInRequest signInRequest);
 
+    void sendVerificationLater(String email);
+
     void verifyUser(String email, String otp);
 
     void forgotPassRequest(String email);

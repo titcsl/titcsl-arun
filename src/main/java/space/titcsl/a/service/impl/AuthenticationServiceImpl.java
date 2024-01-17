@@ -52,7 +52,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setDisplayName(signUpRequest.getDisplayName());
         String otp = UUID.randomUUID().toString().substring(0, 6);
         user.setVerified(false);
-        user.setVerificationCode(otp);  // Set the verification code here
+        user.setHandlecode1(otp);  // Set the verification code here
         user.setFirstName(signUpRequest.getFirstName());
         user.setLastName(signUpRequest.getLastName());
         user.setPhone(signUpRequest.getPhone());
@@ -73,7 +73,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
 
-            if (!user.isVerified() && otp.equals(user.getVerificationCode())) {
+            if (!user.isVerified() && otp.equals(user.getHandlecode1())) {
                 user.setVerified(true);
                 userRepository.save(user);
             } else {
@@ -174,7 +174,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             User user = optionalUser.get();
 
             if (user.isVerified()) {
-                user.setForgot_pass_otp(otp);
+                user.setHandlecode2(otp);
                 userRepository.save(user);
                 emailService.sendVerificationEmail(email, otp);
             } else {
@@ -186,13 +186,29 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     }
 
+    public void sendVerificationLater(String email){
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            String otp = UUID.randomUUID().toString().substring(0, 6);
+
+            user.setHandlecode1(otp);
+            userRepository.save(user);
+            emailService.sendVerificationEmail(email, otp);
+
+        } else {
+            throw new UserNotFoundException("User not found");
+        }
+    }
+
     public void settingPasswordForgot(String email, String password, String otp){
         Optional<User> optionalUser = userRepository.findByEmail(email);
 
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
 
-            if (otp.equals(user.getForgot_pass_otp())) {
+            if (otp.equals(user.getHandlecode2())) {
                 user.setPassword(passwordEncoder.encode(password));
                 userRepository.save(user);
             } else {
