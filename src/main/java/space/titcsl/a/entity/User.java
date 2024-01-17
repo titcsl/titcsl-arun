@@ -34,6 +34,11 @@ public class User implements UserDetails {
 
     private String displayName;
 
+    private boolean verified;
+
+    private String verificationCode;
+
+
     private Role role;
 
     @Override

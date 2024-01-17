@@ -9,6 +9,8 @@ public interface AuthenticationService {
 
     JwtAuthenticationResponse signin(SignInRequest signInRequest);
 
+    void verifyUser(String email, String otp);
+
     User updateUser(UpdateUserDto updateUserRequest, String token);
     JwtAuthenticationResponse refreshToken(RefreshTokenRequest refreshTokenRequest);
 }

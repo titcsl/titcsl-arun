@@ -1,6 +1,7 @@
 package space.titcsl.a.service.impl;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -12,17 +13,21 @@ import space.titcsl.a.exception.UserExistsException;
 import space.titcsl.a.exception.UserNotFoundException;
 import space.titcsl.a.repository.UserRepository;
 import space.titcsl.a.service.AuthenticationService;
+import space.titcsl.a.service.EmailService;
 import space.titcsl.a.service.JwtService;
 
 import javax.swing.text.html.Option;
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.logging.Logger;
 
 @Service
 @RequiredArgsConstructor
 public class AuthenticationServiceImpl implements AuthenticationService {
 
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -43,6 +48,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         User user = new User();
         user.setEmail(signUpRequest.getEmail());
         user.setDisplayName(signUpRequest.getDisplayName());
+        String otp = UUID.randomUUID().toString().substring(0, 6);
+        user.setVerified(false);
+        user.setVerificationCode(otp);  // Set the verification code here
         user.setFirstName(signUpRequest.getFirstName());
         user.setLastName(signUpRequest.getLastName());
         user.setPhone(signUpRequest.getPhone());
@@ -51,10 +59,28 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         // Save the new user
         userRepository.save(user);
+        emailService.sendVerificationEmail(user.getEmail(), otp);
+
 
         return user;
     }
 
+        public void verifyUser(String email, String otp) {
+        Optional<User> optionalUser = userRepository.findByEmail(email);
+
+            if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+
+            if (!user.isVerified() && otp.equals(user.getVerificationCode())) {
+                user.setVerified(true);
+                userRepository.save(user);
+            } else {
+                throw new UserNotFoundException("Invalid OTP or User not found");
+            }
+        } else {
+            throw new UserNotFoundException("User not found");
+        }
+    }
     @Override
     public User updateUser(UpdateUserDto updateUserRequest, String token) {
         // Validate the token
@@ -67,7 +93,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             throw new UserExistsException("Email already exists! Please choose a different email.");
         }
         if (!authUser.getDisplayName().equals(updateUserRequest.getDisplayName()) && userRepository.existsByDisplayName(updateUserRequest.getDisplayName())) {
-            throw new UserNotFoundException("Display Name Is already iven to someone");
+            throw new UserExistsException("Display Name Is already given to someone");
         }
 
         User user = userRepository.findByEmail(updateUserRequest.getEmail())
