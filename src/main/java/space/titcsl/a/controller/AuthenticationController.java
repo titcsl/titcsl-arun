@@ -3,12 +3,14 @@ package space.titcsl.a.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.parameters.P;
 import org.springframework.web.bind.annotation.*;
 import space.titcsl.a.dto.*;
 import space.titcsl.a.entity.User;
+import space.titcsl.a.exception.GlobalErrorExceptionHandler;
 import space.titcsl.a.exception.InvalidCredentialsException;
 import space.titcsl.a.exception.UserExistsException;
 import space.titcsl.a.exception.UserNotFoundException;
@@ -20,15 +22,19 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+
+
 @RestController
-@RequestMapping(path = "/api/v1/auth")
 @RequiredArgsConstructor
 public class AuthenticationController {
 
     private final AuthenticationService authenticationService;
     private final UserRepository userRepository;
 
-    @PostMapping("/signup")
+    @Value("space.titcsl.a.api.version")
+    private String version;
+
+    @PostMapping("/api/{version}/auth/signup")
     public ResponseEntity<?> signup(@RequestBody SignUpRequest signUpRequest) {
         try {
             User user = authenticationService.signup(signUpRequest);
@@ -37,14 +43,25 @@ public class AuthenticationController {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-        } catch (UserNotFoundException ex) {
+        } catch (UserNotFoundException | GlobalErrorExceptionHandler ex) {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+
+            // Convert Map to JSON string using Jackson
+            ObjectMapper objectMapper = new ObjectMapper();
+            String jsonResponse;
+            try {
+                jsonResponse = objectMapper.writeValueAsString(response);
+            } catch (Exception e) {
+                // Handle serialization exception
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report {ReportEmail}");
+            }
+
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);
         }
     }
 
-    @PostMapping("/signin")
+    @PostMapping("/api/{version}/auth/signin")
     public ResponseEntity<?> signin(@RequestBody SignInRequest signInRequest) {
         try {
             return ResponseEntity.ok(authenticationService.signin(signInRequest));
@@ -52,22 +69,33 @@ public class AuthenticationController {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-        } catch (UserNotFoundException ex) {
+        } catch (UserNotFoundException | GlobalErrorExceptionHandler ex) {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+
+            // Convert Map to JSON string using Jackson
+            ObjectMapper objectMapper = new ObjectMapper();
+            String jsonResponse;
+            try {
+                jsonResponse = objectMapper.writeValueAsString(response);
+            } catch (Exception e) {
+                // Handle serialization exception
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report {ReportEmail}");
+            }
+
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);
         } catch (InvalidCredentialsException ex) {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
         }
     }
-    @PostMapping("/refresh/token")
+    @PostMapping("/api/{version}/auth/refresh/token")
     public ResponseEntity<JwtAuthenticationResponse> refreshAndGetToken(@RequestBody RefreshTokenRequest refreshTokenRequest){
         return ResponseEntity.ok(authenticationService.refreshToken(refreshTokenRequest));
     }
 
-    @PostMapping("/verificationLaterGen")
+    @PostMapping("/api/{version}/auth/verificationLaterGen")
     public ResponseEntity<String> verifyLaterEmail(@RequestBody Map<String, String> requestBody) {
         try {
             String email = requestBody.get("email");
@@ -75,8 +103,8 @@ public class AuthenticationController {
 
 
 
-            return ResponseEntity.ok("Otp Sent successful");
-        } catch (UserNotFoundException ex) {
+            return ResponseEntity.ok("One time password Sent successfully! it will reach faster as flash. else contact {SupportEmail}");
+        } catch (UserNotFoundException | GlobalErrorExceptionHandler ex) {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
 
@@ -87,7 +115,7 @@ public class AuthenticationController {
                 jsonResponse = objectMapper.writeValueAsString(response);
             } catch (Exception e) {
                 // Handle serialization exception
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error converting to JSON");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report {ReportEmail}");
             }
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);
@@ -95,7 +123,7 @@ public class AuthenticationController {
     }
 
 
-    @PostMapping("/verify")
+    @PostMapping("/api/{version}/auth/verify")
     public ResponseEntity<String> verify(@RequestBody VerificationRequest verificationRequest) {
         try {
             String email = verificationRequest.getEmail();
@@ -103,8 +131,8 @@ public class AuthenticationController {
             authenticationService.verifyUser(email, otp);
 
             // Verification successful
-            return ResponseEntity.ok("Verification successful");
-        } catch (UserNotFoundException ex) {
+            return ResponseEntity.ok("Verification done successfully! Now enjoy the medication");
+        } catch (UserNotFoundException | GlobalErrorExceptionHandler ex) {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
 
@@ -115,14 +143,14 @@ public class AuthenticationController {
                 jsonResponse = objectMapper.writeValueAsString(response);
             } catch (Exception e) {
                 // Handle serialization exception
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error converting to JSON");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report {ReportEmail}");
             }
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);
         }
     }
 
-    @PostMapping("/forgot-password")
+    @PostMapping("/api/{version}/auth/forgot-password")
     public ResponseEntity<?> ForgotPasswordRequest(@RequestBody Map<String, String> requestBody){
         String email = requestBody.get("email");
         try {
@@ -132,15 +160,26 @@ public class AuthenticationController {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-        } catch (UserNotFoundException ex) {
+        } catch (UserNotFoundException | GlobalErrorExceptionHandler ex) {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+
+            // Convert Map to JSON string using Jackson
+            ObjectMapper objectMapper = new ObjectMapper();
+            String jsonResponse;
+            try {
+                jsonResponse = objectMapper.writeValueAsString(response);
+            } catch (Exception e) {
+                // Handle serialization exception
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report {ReportEmail}");
+            }
+
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);
         }
 
     }
 
-    @PostMapping("/verify-forgot-password")
+    @PostMapping("/api/{version}/auth/verify-forgot-password")
     public ResponseEntity<?> ForgotPasswordValidiate(@RequestBody Map<String, String> requestBody){
         String email = requestBody.get("email");
         String otp = requestBody.get("otp");
@@ -153,10 +192,21 @@ public class AuthenticationController {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-        } catch (UserNotFoundException ex) {
+        } catch (UserNotFoundException | GlobalErrorExceptionHandler ex) {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+
+            // Convert Map to JSON string using Jackson
+            ObjectMapper objectMapper = new ObjectMapper();
+            String jsonResponse;
+            try {
+                jsonResponse = objectMapper.writeValueAsString(response);
+            } catch (Exception e) {
+                // Handle serialization exception
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report {ReportEmail}");
+            }
+
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);
         }
 
     }

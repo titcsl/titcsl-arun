@@ -2,6 +2,7 @@ package space.titcsl.a.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import space.titcsl.a.dto.*;
 import space.titcsl.a.entity.Role;
 import space.titcsl.a.entity.User;
+import space.titcsl.a.exception.GlobalErrorExceptionHandler;
 import space.titcsl.a.exception.InvalidCredentialsException;
 import space.titcsl.a.exception.UserExistsException;
 import space.titcsl.a.exception.UserNotFoundException;
@@ -36,15 +38,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
+    @Value("${space.titcsl.a.email.support}")
+    private String SupportEmail;
+
     public User signup(SignUpRequest signUpRequest) {
         // Check if a user with the same display name exists
         if (userRepository.existsByDisplayName(signUpRequest.getDisplayName())) {
-            throw new UserExistsException("Display name already exists! Try using another cool display name for you.");
+            throw new UserExistsException("Display name already exists! Try using another cool display name for you else. contact: " + SupportEmail);
         }
 
         // Check if a user with the same email exists
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            throw new UserExistsException("Email already exists! login with email or try resetting password. Thank You!");
+            throw new UserExistsException("Email already exists! login with email or try resetting password else. contact: " + SupportEmail);
         }
 
         User user = new User();
@@ -56,7 +61,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         user.setFirstName(signUpRequest.getFirstName());
         user.setLastName(signUpRequest.getLastName());
         user.setPhone(signUpRequest.getPhone());
-        user.setRole(Role.USER);
+        user.setRole(Role.ADMIN);
         user.setPassword(passwordEncoder.encode(signUpRequest.getPassword()));
 
         // Save the new user
@@ -75,12 +80,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             if (!user.isVerified() && otp.equals(user.getHandlecode1())) {
                 user.setVerified(true);
+                user.setHandlecode1("ok");
                 userRepository.save(user);
+                emailService.EmailAlertsToUser(user.getEmail(), "You have create your account on Arun Ayurved. now head to the website https://arunayurved.com. start your medication journey soon. Thank You!");
             } else {
-                throw new UserNotFoundException("Invalid OTP or User not found");
+                throw new GlobalErrorExceptionHandler("The Otp you have entered is wrong! So Don't Worry Try again else. contact: " + SupportEmail);
             }
         } else {
-            throw new UserNotFoundException("User not found");
+            throw new UserNotFoundException("The user is not found so please do verification via TITCSL portal else. contact: " + SupportEmail);
         }
     }
 
@@ -89,7 +96,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         // Validate the token
         String userEmail = jwtService.extractUsername(token);
         User authUser = userRepository.findByEmail(userEmail)
-                .orElseThrow(() -> new UserNotFoundException("Authenticated user not found"));
+                .orElseThrow(() -> new UserNotFoundException("You should not do this! please login again"));
 
         // Check if the email is being updated to an existing email
         if (!authUser.getEmail().equals(updateUserRequest.getEmail()) && userRepository.existsByEmail(updateUserRequest.getEmail())) {
@@ -104,7 +111,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         // Check if the authenticated user is updating their own profile
         if (!authUser.getEmail().equals(updateUserRequest.getEmail())) {
-            throw new UserNotFoundException("User not authorized to update this profile");
+            throw new GlobalErrorExceptionHandler("iInvalid Request!");
         }
 
 
@@ -117,9 +124,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             user.setLastName(updateUserRequest.getLastName());
         }
 
-        if (updateUserRequest.getEmail() != null) {
-            user.setEmail(updateUserRequest.getEmail());
-        }
 
         if (updateUserRequest.getPassword() != null) {
             // You may want to handle password encoding here
@@ -146,7 +150,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                     signInRequest.getPassword()));
 
             var user = userRepository.findByEmail(signInRequest.getEmail()).orElseThrow(() ->
-                    new UserNotFoundException("Email or Password are Wrong. Try resetting it or check email or password one more time"));
+                    new UserNotFoundException("Email or Password are Wrong (Email not found in server) because of this password will be* wrong else. contact: " + SupportEmail));
 
             if (user.isVerified()) {
                 var jwt = jwtService.generateToken(user);
@@ -156,10 +160,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 jwtAuthenticationResponse.setRefreshToken(refreshToken);
                 return jwtAuthenticationResponse;
             } else {
-                throw new UserExistsException("Verify your account if you could not verify it check the email for instruction email could be in spam/junk. But Trust us. We are since 1937 Serving peoples 14 hours a day..");
+                throw new GlobalErrorExceptionHandler("Verify your account if you could not verify it check the email for instruction email could be in spam/junk. But Trust us. We are since 1937 Serving peoples 14 hours a day.");
             }
         } catch (AuthenticationException ex) {
-            throw new InvalidCredentialsException("Email or Password are Wrong. Try resetting it or check email or password one more time");
+            throw new InvalidCredentialsException("Email or Password are Wrong. Try resetting it or check email or password one more time else. contact: " + SupportEmail);
         }
     }
 
@@ -178,10 +182,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 userRepository.save(user);
                 emailService.sendVerificationEmail(email, otp);
             } else {
-                throw new UserNotFoundException("User not found! Try rechecking email or contact support@arunayurved.com");
+                throw new GlobalErrorExceptionHandler( "User not found! Try rechecking email or contact contact: " + SupportEmail);
             }
         } else {
-            throw new UserNotFoundException("User not found with email you have just give recheck the email and give it again");
+            throw new UserNotFoundException("User not found with email! please recheck it or else. contact: " + SupportEmail);
         }
 
     }
@@ -198,7 +202,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             emailService.sendVerificationEmail(email, otp);
 
         } else {
-            throw new UserNotFoundException("User not found");
+            throw new UserNotFoundException("User not found with email! please recheck it or else. contact: " + SupportEmail);
         }
     }
 
@@ -210,12 +214,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
             if (otp.equals(user.getHandlecode2())) {
                 user.setPassword(passwordEncoder.encode(password));
+                user.setHandlecode2("ok");
                 userRepository.save(user);
+
             } else {
-                throw new UserNotFoundException("Invalid Otp try contacting contact support@arunayurved.com");
+                throw new GlobalErrorExceptionHandler("Invalid One-time-password. try checking it one more time.");
             }
         } else {
-            throw new UserNotFoundException("User not found with email you have just give recheck the email and give it again or contact support@arunayurved.com");
+            throw new UserNotFoundException("User not found with email! please recheck it or else. contact: " + SupportEmail);
         }
 
     }
@@ -231,8 +237,9 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                 jwtAuthenticationResponse.setToken(jwt);
                 jwtAuthenticationResponse.setRefreshToken(refreshTokenRequest.getToken());
                 return jwtAuthenticationResponse;
+            } else {
+                throw  new GlobalErrorExceptionHandler("Please login one more time. for securing your account more than others.");
             }
-        return null;
     }
 
 }

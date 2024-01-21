@@ -5,8 +5,10 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import space.titcsl.a.exception.InvalidTokenException;
 import space.titcsl.a.service.JwtService;
 
 import java.security.Key;
@@ -17,13 +19,18 @@ import java.util.function.Function;
 
 @Service
 public class JwtServiceImpl implements JwtService{
+
+    @Value("${space.titcsl.a.jwt_secret_key}")
+    private String jwt_secret_key;
+
     public String generateToken(UserDetails userDetails){
         return  Jwts.builder().setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 604800000))
+                .setExpiration(new Date(System.currentTimeMillis() + 30 * 24 * 60 * 60 * 1000L)) // 30 days in milliseconds
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
+
 
     public String generateRefreshToken(Map<String, Object> extraClaims, UserDetails userDetails){
         return  Jwts.builder().setClaims(extraClaims).setSubject(userDetails.getUsername())
@@ -43,11 +50,21 @@ public class JwtServiceImpl implements JwtService{
     }
 
     private Claims extractAllClaim(String token) {
-        return Jwts.parserBuilder().setSigningKey(getSignKey()).build().parseClaimsJws(token).getBody();
+        try {
+            return Jwts.parserBuilder().setSigningKey(getSignKey()).build().parseClaimsJws(token).getBody();
+        } catch (SecurityException e) {
+
+            throw new InvalidTokenException("We have locked account for internal server security bits exception for securing it more. Please login again! Sorry for inconvenience");
+        } catch (Exception e) {
+
+            throw new InvalidTokenException("We have locked account for internal server security bits exception for securing it more. Please login again! Sorry for inconvenience");
+        }
     }
 
+
+
     private Key getSignKey() {
-       byte[] key = Decoders.BASE64.decode("df261a4ecbc0fa170d98a8c1b63c7eaa50d7f8e8a0f86cd9a6f1aec82d7a1e8e");
+       byte[] key = Decoders.BASE64.decode(jwt_secret_key);
        return Keys.hmacShaKeyFor(key);
     }
     public boolean isTokenValid(String token, UserDetails userDetails){

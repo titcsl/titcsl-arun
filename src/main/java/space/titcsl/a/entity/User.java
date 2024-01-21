@@ -43,6 +43,7 @@ public class User implements UserDetails {
 
     private String handlecode1;
 
+    private String EmailMessageId;
 
     private Role role;
 
