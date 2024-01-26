@@ -8,11 +8,11 @@
 		<version>3.1.7</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>space.titcsl</groupId>
+	<groupId>space.titcsl.arunaushadhalay</groupId>
 	<artifactId>a</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.2-INIT-TITCSL</version>
 	<name>a</name>
-	<description>Application</description>
+	<description>Arun Aushadhalay</description>
 	<properties>
 		<java.version>17</java.version>
 	</properties>
