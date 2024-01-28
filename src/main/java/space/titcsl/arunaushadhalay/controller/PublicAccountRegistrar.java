@@ -28,7 +28,7 @@ public class PublicAccountRegistrar {
 
         try {
             userService.updateEmailReq(OldEmail, NewEmail);
-            return ResponseEntity.ok("Otp is succesfully sent on New Email And Old Email kindly verify it. Thank you!");
+            return ResponseEntity.ok("Otp is successfully sent on New Email that you want register And old Email kindly verify it. Thank you!");
         } catch (UserNotFoundException ex) {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
@@ -45,7 +45,7 @@ public class PublicAccountRegistrar {
 
         try {
             userService.updateEmailConfirm(NewEmail, NewOtp, OldEmail, OldOtp);
-            return ResponseEntity.ok("You email Updated successfully");
+            return ResponseEntity.ok("You email is been updating. waiting for database validation.");
         }catch (UserNotFoundException ex) {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());

@@ -28,13 +28,13 @@ public class UserServiceImpl implements UserService {
     @Value("${space.titcsl.arunaushadhalay.email.support}")
     private String SupportEmail;
 
-    public User updateManagementRole(String email) {
+    public User updateManagementRole(String email, String adminUsername) {
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UserNotFoundException("Account with email not found email: " + email));
 
         user.setRole(Role.MANAGEMENT);
-
+        user.setLastUpdateByManagement(adminUsername);
 
         userRepository.save(user);
         return (user);
@@ -89,10 +89,12 @@ public class UserServiceImpl implements UserService {
     }
 
 
-    public void sendEmailToAllUsers(String subject, String body) {
+    public void sendEmailToAllUsers(String subject, String body,String adminUser) {
         List<User> users = userRepository.findAll();
         for (User user : users) {
             emailService.sendEmail(user.getEmail(), subject, body);
+            user.setEmailToAllBy(adminUser);
+            userRepository.save(user);
         }
     }
 

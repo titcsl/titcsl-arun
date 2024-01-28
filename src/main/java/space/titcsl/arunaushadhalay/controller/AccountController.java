@@ -30,9 +30,9 @@ public class AccountController {
     private String version;
 
     @GetMapping("/api/{version}/account/me")
-    public ResponseEntity getAccountData(@RequestHeader("Authorization") String authorizationHeader) {
+    public ResponseEntity getAccountData(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader) {
         try {
-            String jwtToken = authorizationHeader.replace("Bearer ", "");
+            String jwtToken = extractToken(authorizationHeader);
 
             // Extract the username from the JWT token
             String username = jwtService.extractUsername(jwtToken);
@@ -63,7 +63,7 @@ public class AccountController {
                 jsonResponse = objectMapper.writeValueAsString(response);
             } catch (Exception e) {
                 // Handle serialization exception
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report {ReportEmail}");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report issue@arunayurved.com");
             }
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);
@@ -90,7 +90,7 @@ public class AccountController {
                 jsonResponse = objectMapper.writeValueAsString(response);
             } catch (Exception e) {
                 // Handle serialization exception
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report {ReportEmail}");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report issue@arunayurved.com");
             }
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);
@@ -101,11 +101,28 @@ public class AccountController {
         }
     }
 
+    @PostMapping("/api/{version}/account/enablesTfa")
+    private ResponseEntity<?> enablesTfa(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorizationHeader){
+        String token = extractToken(authorizationHeader);
+        String email = jwtService.extractUsername(token);
+        try {
+            authenticationService.tfaEnable(email);
+        }catch (UserNotFoundException ex){
+            Map<String, String> response = new HashMap<>();
+            response.put("message", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        }
+        return ResponseEntity.ok("You will be able to get one time password at the time of login to your email: " + email + " any issue contact issue@arunayurved.com");
+    }
+
+
     private String extractToken(String authorizationHeader) {
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
             return authorizationHeader.substring(7); // Extracting the token after "Bearer "
+        }else {
+            return "Error validating your account! please login again or restart your browser if not. report issue@arunayurved.com";
         }
-        return null;
+
     }
 
 

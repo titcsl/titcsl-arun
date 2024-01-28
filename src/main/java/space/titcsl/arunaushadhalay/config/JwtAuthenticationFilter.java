@@ -58,7 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } catch (SecurityException e) {
             // Handle the SecurityException (e.g., log the error, return an unauthorized response)
-            response.getWriter().write("We have locked account for internal server security bits exception for securing it more. Please login again! Sorry for inconvenience");
+            response.getWriter().write("We have locked account fori internal server security bits exception for securing it more. Please login again! Sorry for inconvenience");
         } catch (Exception e) {
             // Handle other exceptions (e.g., log the error, return an internal server error response)
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

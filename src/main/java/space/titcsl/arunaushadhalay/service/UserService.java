@@ -11,9 +11,9 @@ public interface UserService {
 
     void updateEmailConfirm(String NewEmail, String otp, String OldEmail, String oldOtp);
 
-    User updateManagementRole(String email);
+    User updateManagementRole(String email, String adminUsername);
 
-    void sendEmailToAllUsers(String subject, String body);
+    void sendEmailToAllUsers(String subject, String body,String adminUser);
 
     void DeleteUser(String email);
 

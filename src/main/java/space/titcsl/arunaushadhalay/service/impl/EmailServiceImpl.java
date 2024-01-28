@@ -76,7 +76,7 @@ public class EmailServiceImpl implements EmailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
         message.setSubject(subject);
-        message.setText(body + "\nMessage Id: " + uuid);
+        message.setText(body + "\n\n\nMessage Id: " + uuid);
         javaMailSender.send(message);
     }
 }

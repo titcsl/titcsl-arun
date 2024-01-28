@@ -44,6 +44,13 @@ public class User implements UserDetails {
 
     private Role role;
 
+    private String lastUpdateByManagement;
+
+    private String emailToAllBy;
+
+    private boolean tfa;
+
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority(role.name()));

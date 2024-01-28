@@ -15,6 +15,10 @@ public interface AuthenticationService {
 
     void forgotPassRequest(String email);
 
+    void tfaEnable(String email);
+
+    JwtAuthenticationResponse tfaVerify(String email, String otp, String ip_addr);
+
     void settingPasswordForgot(String email, String password, String otp);
 
     User updateUser(UpdateUserDto updateUserRequest, String token);

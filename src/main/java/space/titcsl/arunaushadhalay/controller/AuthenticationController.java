@@ -1,6 +1,7 @@
 package space.titcsl.arunaushadhalay.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -42,14 +43,13 @@ public class AuthenticationController {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
 
-            // Convert Map to JSON string using Jackson
             ObjectMapper objectMapper = new ObjectMapper();
             String jsonResponse;
             try {
                 jsonResponse = objectMapper.writeValueAsString(response);
             } catch (Exception e) {
                 // Handle serialization exception
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report {ReportEmail}");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report issue@arunayurved.com");
             }
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);
@@ -75,7 +75,7 @@ public class AuthenticationController {
                 jsonResponse = objectMapper.writeValueAsString(response);
             } catch (Exception e) {
                 // Handle serialization exception
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report {ReportEmail}");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report issue@arunayurved.com");
             }
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);
@@ -98,7 +98,7 @@ public class AuthenticationController {
 
 
 
-            return ResponseEntity.ok("One time password Sent successfully! it will reach faster as flash. else contact {SupportEmail}");
+            return ResponseEntity.ok("One time password Sent successfully! it will reach faster as flash. else contact support@arunayurved.com");
         } catch (UserNotFoundException | GlobalErrorExceptionHandler ex) {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
@@ -110,13 +110,45 @@ public class AuthenticationController {
                 jsonResponse = objectMapper.writeValueAsString(response);
             } catch (Exception e) {
                 // Handle serialization exception
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report {ReportEmail}");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report issue@arunayurved.com");
             }
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);
         }
     }
 
+    @PostMapping("/api/{version}/auth/tfasignin")
+    public ResponseEntity<?> Tfasignin(@RequestBody Map<String, String> requestBody, HttpServletRequest request) {
+        String email = requestBody.get("email");
+        String otp = requestBody.get("otp");
+        String ip_addr = request.getRemoteAddr();
+        try {
+            return ResponseEntity.ok(authenticationService.tfaVerify(email, otp, ip_addr));
+        } catch (UserExistsException ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+        } catch (UserNotFoundException | GlobalErrorExceptionHandler ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", ex.getMessage());
+
+            // Convert Map to JSON string using Jackson
+            ObjectMapper objectMapper = new ObjectMapper();
+            String jsonResponse;
+            try {
+                jsonResponse = objectMapper.writeValueAsString(response);
+            } catch (Exception e) {
+                // Handle serialization exception
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report issue@arunayurved.com");
+            }
+
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);
+        } catch (InvalidCredentialsException ex) {
+            Map<String, String> response = new HashMap<>();
+            response.put("message", ex.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+        }
+    }
 
     @PostMapping("/api/{version}/auth/verify")
     public ResponseEntity<String> verify(@RequestBody VerificationRequest verificationRequest) {
@@ -138,7 +170,7 @@ public class AuthenticationController {
                 jsonResponse = objectMapper.writeValueAsString(response);
             } catch (Exception e) {
                 // Handle serialization exception
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report {ReportEmail}");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report issue@arunayurved.com");
             }
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);
@@ -150,7 +182,7 @@ public class AuthenticationController {
         String email = requestBody.get("email");
         try {
             authenticationService.forgotPassRequest(email);
-            return ResponseEntity.ok().body("Otp Sent Succesfully");
+            return ResponseEntity.ok().body("Otp Sent Successfully on your email: "+ email);
         } catch (UserExistsException ex) {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
@@ -166,7 +198,7 @@ public class AuthenticationController {
                 jsonResponse = objectMapper.writeValueAsString(response);
             } catch (Exception e) {
                 // Handle serialization exception
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report {ReportEmail}");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report issue@arunayurved.com");
             }
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);
@@ -182,7 +214,7 @@ public class AuthenticationController {
 
         try {
             authenticationService.settingPasswordForgot(email, password, otp);
-            return ResponseEntity.ok().body("Password Setted Succesfully.");
+            return ResponseEntity.ok().body("Password has been set successfully. wait for 5 minutes we're checking for Database for validation.");
         } catch (UserExistsException ex) {
             Map<String, String> response = new HashMap<>();
             response.put("message", ex.getMessage());
@@ -198,7 +230,7 @@ public class AuthenticationController {
                 jsonResponse = objectMapper.writeValueAsString(response);
             } catch (Exception e) {
                 // Handle serialization exception
-                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report {ReportEmail}");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal bits error! Sorry for inconvenience. report issue@arunayurved.com");
             }
 
             return ResponseEntity.status(HttpStatus.CONFLICT).body(jsonResponse);

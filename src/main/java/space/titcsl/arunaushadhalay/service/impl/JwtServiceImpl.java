@@ -5,10 +5,13 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import space.titcsl.arunaushadhalay.entity.User;
 import space.titcsl.arunaushadhalay.exception.InvalidTokenException;
+import space.titcsl.arunaushadhalay.repository.UserRepository;
 import space.titcsl.arunaushadhalay.service.JwtService;
 
 import java.security.Key;
@@ -17,14 +20,22 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Service
+@RequiredArgsConstructor
 public class JwtServiceImpl implements JwtService{
+
+    private final UserRepository userRepository;
 
     @Value("${space.titcsl.arunaushadhalay.jwt_secret_key}")
     private String jwt_secret_key;
 
     public String generateToken(UserDetails userDetails){
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow();
+
+
         return  Jwts.builder().setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setIssuer("TEREDESAI INFORMATION TECHNOLOGY CONSULTANCY SERVICE LIMITED")
                 .setExpiration(new Date(System.currentTimeMillis() + 30 * 24 * 60 * 60 * 1000L)) // 30 days in milliseconds
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
